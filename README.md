@@ -2,7 +2,7 @@
 
 Trang chủ (Homepage) hoàn chỉnh cho website phòng gym hiện đại có AI Coach, xây dựng bằng React + Vite + Tailwind CSS + Framer Motion.
 
-## Công nghệ
+## Công nghệ  
 
 - **React 18** + **Vite** 
 - **Tailwind CSS** 
