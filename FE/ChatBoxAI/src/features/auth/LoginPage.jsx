@@ -1,16 +1,16 @@
 import React from 'react'
-import { Link, useNavigate } from 'react-router-dom'
+import { Link } from 'react-router-dom'
 import AuthLayout from '../../layouts/AuthLayout.jsx'
 import Button from '../../components/Button.jsx'
+import { useLoading } from '../../context/LoadingContext.jsx'
 import FormField from './components/FormField.jsx'
 
 export default function LoginPage() {
-  const navigate = useNavigate()
+  const { navigateWithLoading } = useLoading()
 
-  // MVP: không kiểm tra tài khoản, chỉ chuyển về trang chủ.
   const handleSubmit = (e) => {
     e.preventDefault()
-    navigate('/')
+    navigateWithLoading('/', { message: 'Đang đăng nhập...' })
   }
 
   return (

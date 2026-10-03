@@ -1,6 +1,6 @@
 import React from 'react'
 
-export default function FormField({ label, name, type = 'text', placeholder }) {
+export default function FormField({ label, name, type = 'text', placeholder, ...rest }) {
   return (
     <div>
       <label
@@ -15,6 +15,7 @@ export default function FormField({ label, name, type = 'text', placeholder }) {
         type={type}
         placeholder={placeholder}
         required
+        {...rest}
         className="w-full text-sm bg-slate-100 dark:bg-slate-800 rounded-xl px-4 py-3 outline-none text-ink dark:text-white placeholder:text-slate-400 focus:ring-2 focus:ring-primary/40 transition"
       />
     </div>

@@ -1,6 +1,7 @@
-import React from 'react'
+import React, { useState } from 'react' // MỚI: thêm useState
 import { motion } from 'framer-motion'
 import { Check, X, Dumbbell, CalendarDays, Home } from 'lucide-react'
+import PlanModal from './PlanModal.jsx' // MỚI
 
 const PLANS = [
   {
@@ -62,6 +63,9 @@ const PLANS = [
 ]
 
 export default function Membership() {
+  // MỚI: gói đang được chọn (null = popup đóng)
+  const [selectedPlan, setSelectedPlan] = useState(null)
+
   return (
     <section id="membership" className="py-16 lg:py-24 bg-slate-50 dark:bg-slate-950/40">
       <div className="max-w-7xl mx-auto px-5 lg:px-8">
@@ -161,9 +165,10 @@ export default function Membership() {
                   ))}
                 </ul>
 
-                {/* CTA */}
-                <a
-                  href="#login"
+                {/* CTA — MỚI: đổi từ <a href="#login"> thành <button> mở popup */}
+                <button
+                  type="button"
+                  onClick={() => setSelectedPlan(plan)}
                   id={`cta-${plan.id}`}
                   className={`relative mt-8 text-center font-semibold px-5 py-3 rounded-full transition-colors
                     ${plan.highlight
@@ -174,12 +179,15 @@ export default function Membership() {
                   `}
                 >
                   {plan.cta}
-                </a>
+                </button>
               </motion.div>
             )
           })}
         </div>
       </div>
+
+      {/* MỚI: popup đăng ký gói tập */}
+      <PlanModal plan={selectedPlan} onClose={() => setSelectedPlan(null)} />
     </section>
   )
 }
