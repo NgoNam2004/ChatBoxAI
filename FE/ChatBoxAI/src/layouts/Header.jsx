@@ -2,6 +2,7 @@ import React, { useState } from 'react'
 // Note: Header lives in layouts/ (not features/) because it is shared,
 // route-independent chrome — same reasoning as Footer.jsx alongside it.
 import { Menu, X, Dumbbell } from 'lucide-react'
+import { Link } from 'react-router-dom'
 
 const NAV_LINKS = [
   { label: 'Trang chủ', href: '#hero' },
@@ -41,9 +42,9 @@ export default function Header() {
 
         {/* Right actions */}
         <div className="hidden lg:flex items-center gap-3">
-          <a href="#login" className="text-sm font-semibold text-ink dark:text-white hover:text-primary px-3 py-2">
+          <Link to="/login" className="text-sm font-semibold text-ink dark:text-white hover:text-primary px-3 py-2">
             Đăng nhập
-          </a>
+          </Link>
           <a
             href="#membership"
             className="text-sm font-semibold bg-accent hover:bg-accent-dark text-white px-5 py-2.5 rounded-full shadow-sm shadow-orange-300/40 transition-colors"
@@ -74,17 +75,13 @@ export default function Header() {
             ))}
           </nav>
           <div className="flex items-center gap-3 mt-4">
-            <a href="#login" className="flex-1 text-center text-sm font-semibold text-ink dark:text-white py-2.5 border border-slate-200 dark:border-slate-700 rounded-full">
+            <Link to="/login" className="flex-1 text-center text-sm font-semibold text-ink dark:text-white py-2.5 border border-slate-200 dark:border-slate-700 rounded-full">
               Đăng nhập
-            </a>
+            </Link>
           </div>
-          <a
-            href="#membership"
-            onClick={() => setOpen(false)}
-            className="mt-3 block text-center text-sm font-semibold bg-accent hover:bg-accent-dark text-white px-4 py-3 rounded-full"
-          >
+          <Link to="/register" className="mt-3 block text-center text-sm font-semibold bg-accent hover:bg-accent-dark text-white px-4 py-3 rounded-full">
             Tham gia ngay
-          </a>
+          </Link>
         </div>
       )}
     </header>

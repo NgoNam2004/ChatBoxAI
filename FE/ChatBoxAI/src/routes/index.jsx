@@ -2,9 +2,10 @@ import React from 'react'
 import { Routes, Route } from 'react-router-dom'
 import MainLayout from '../layouts/MainLayout.jsx'
 import { HomePage } from '../features/home'
+import { LoginPage, RegisterPage } from '../features/auth'
 
-// Only the homepage route is set up for now. Add more <Route>s here as
-// features grow (e.g. auth pages once src/features/auth is built out).
+// Trang chủ dùng MainLayout (Header + Footer + Chat).
+// Trang Auth tự bọc AuthLayout bên trong nên không cần MainLayout.
 export default function AppRoutes() {
   return (
     <Routes>
@@ -16,6 +17,8 @@ export default function AppRoutes() {
           </MainLayout>
         }
       />
+      <Route path="/login" element={<LoginPage />} />
+      <Route path="/register" element={<RegisterPage />} />
     </Routes>
   )
 }
