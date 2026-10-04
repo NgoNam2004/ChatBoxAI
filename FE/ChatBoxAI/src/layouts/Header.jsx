@@ -42,6 +42,9 @@ export default function Header() {
 
         {/* Right actions */}
         <div className="hidden lg:flex items-center gap-3">
+          <Link to="/profile" className="text-sm font-semibold text-ink dark:text-white hover:text-primary px-3 py-2">
+            Hồ sơ
+          </Link>
           <Link to="/login" className="text-sm font-semibold text-ink dark:text-white hover:text-primary px-3 py-2">
             Đăng nhập
           </Link>
@@ -75,6 +78,9 @@ export default function Header() {
             ))}
           </nav>
           <div className="flex items-center gap-3 mt-4">
+            <Link to="/profile" className="flex-1 text-center text-sm font-semibold text-ink dark:text-white py-2.5 border border-slate-200 dark:border-slate-700 rounded-full">
+              Hồ sơ
+            </Link>
             <Link to="/login" className="flex-1 text-center text-sm font-semibold text-ink dark:text-white py-2.5 border border-slate-200 dark:border-slate-700 rounded-full">
               Đăng nhập
             </Link>

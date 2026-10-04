@@ -57,7 +57,7 @@ function Field({ label, name, type = 'text', value, onSave, options, suffix, inp
   }, [editing])
 
   const startEdit = () => {
-    setDraft(isPassword ? '' : value) // mật khẩu: bắt nhập mới, không hiện mật khẩu cũ
+    setDraft(isPassword ? '' : value) 
     setError('')
     setEditing(true)
   }
