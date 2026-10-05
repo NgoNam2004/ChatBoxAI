@@ -1,4 +1,4 @@
-import React, { useRef } from 'react'
+import React, { useRef, useEffect } from 'react'
 import { motion, AnimatePresence, useDragControls } from 'framer-motion'
 import { Bot, X, Sparkles, GripHorizontal } from 'lucide-react'
 import { useChat } from '../../../context/ChatContext.jsx'
@@ -14,9 +14,15 @@ const QUICK_SUGGESTIONS = ['Gợi ý bài tập', 'Thực đơn giảm cân', 'L
 // Draggable on desktop via framer-motion; always has a clear close button.
 export default function ChatPopup() {
   const { isChatOpen, closeChat } = useChat()
-  const { messages, input, setInput, handleSend, sendMessage } = useChatMessages()
+  const { messages, input, setInput, handleSend, sendMessage, isLoading } = useChatMessages()
   const constraintsRef = useRef(null)
   const dragControls = useDragControls()
+  const messagesEndRef = useRef(null)
+
+  // Auto-scroll xuống tin nhắn mới nhất
+  useEffect(() => {
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
+  }, [messages, isLoading])
 
   return (
     <>
@@ -58,24 +64,32 @@ export default function ChatPopup() {
               {/* Messages */}
               <div className="chat-scroll flex-1 overflow-y-auto px-4 sm:px-5 py-4 space-y-3 bg-slate-50 dark:bg-slate-950/40">
                 {messages.map((m, i) => (
-                  <ChatMessage key={i} from={m.from} text={m.text} />
+                  <ChatMessage key={i} from={m.from} text={m.text} isError={m.isError} />
                 ))}
+
+                {/* Typing indicator — hiển thị khi AI đang xử lý */}
+                {isLoading && <ChatMessage from="ai" isLoading={true} />}
+
+                {/* Anchor để auto-scroll */}
+                <div ref={messagesEndRef} />
               </div>
 
-              {/* Quick suggestions */}
-              <div className="flex flex-wrap gap-2 px-4 sm:px-5 pb-3">
-                {QUICK_SUGGESTIONS.map((q) => (
-                  <button
-                    key={q}
-                    onClick={() => sendMessage(q)}
-                    className="text-xs font-medium text-slate-600 dark:text-slate-300 bg-slate-100 dark:bg-slate-800 hover:bg-primary/10 hover:text-primary px-3 py-1.5 rounded-full transition-colors"
-                  >
-                    {q}
-                  </button>
-                ))}
-              </div>
+              {/* Quick suggestions — ẩn khi đang loading */}
+              {!isLoading && (
+                <div className="flex flex-wrap gap-2 px-4 sm:px-5 pb-3">
+                  {QUICK_SUGGESTIONS.map((q) => (
+                    <button
+                      key={q}
+                      onClick={() => sendMessage(q)}
+                      className="text-xs font-medium text-slate-600 dark:text-slate-300 bg-slate-100 dark:bg-slate-800 hover:bg-primary/10 hover:text-primary px-3 py-1.5 rounded-full transition-colors"
+                    >
+                      {q}
+                    </button>
+                  ))}
+                </div>
+              )}
 
-              <ChatInput value={input} onChange={setInput} onSend={handleSend} />
+              <ChatInput value={input} onChange={setInput} onSend={handleSend} isLoading={isLoading} />
             </motion.div>
           </>
         )}
