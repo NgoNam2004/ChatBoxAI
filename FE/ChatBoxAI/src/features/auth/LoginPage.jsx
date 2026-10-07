@@ -1,16 +1,36 @@
 import React from 'react'
-import { Link } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
 import AuthLayout from '../../layouts/AuthLayout.jsx'
 import Button from '../../components/Button.jsx'
 import { useLoading } from '../../context/LoadingContext.jsx'
+import { useAuth } from '../../context/AuthContext.jsx'
+import { login } from '../../services/authService.js'
+import { notifyError, notifySuccess } from '../../utils/notify.jsx'
 import FormField from './components/FormField.jsx'
 
 export default function LoginPage() {
-  const { navigateWithLoading } = useLoading()
+  const navigate = useNavigate()
+  const { showLoading, hideLoading } = useLoading()
+  const { signIn } = useAuth()
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault()
-    navigateWithLoading('/', { message: 'Đang đăng nhập...' })
+
+    const form = new FormData(e.currentTarget)
+    const email = form.get('email')
+    const password = form.get('password')
+
+    showLoading('Đang đăng nhập...')
+    try {
+      const { data } = await login({ email, password })
+      signIn(data.token, data.user) // lưu + cập nhật state để Header hiện tên
+      hideLoading()
+      notifySuccess(`Chào mừng ${data.user.name}!`)
+      navigate('/')
+    } catch (err) {
+      hideLoading()
+      notifyError(err.details?.length ? err.details : err.message)
+    }
   }
 
   return (

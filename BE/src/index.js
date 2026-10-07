@@ -2,7 +2,8 @@ import 'dotenv/config'
 import express from 'express'
 import cors from 'cors'
 import chatRouter from './routes/chat.js'
-
+import mongoose from 'mongoose'
+import authRouter from './routes/auth.js'
 const app = express()
 const PORT = process.env.PORT || 3001
 
@@ -41,7 +42,7 @@ app.use(express.json({ limit: '1mb' }))
 
 // ─── Routes ──────────────────────────────────────────────────────────────────
 app.use('/api/chat', chatRouter)
-
+app.use('/api/auth', authRouter)
 // Health check — trả về cả trạng thái GEMINI_API_KEY
 app.get('/api/health', (_req, res) => {
   const key = process.env.GEMINI_API_KEY ? process.env.GEMINI_API_KEY.trim() : ''
@@ -65,6 +66,13 @@ app.use((err, _req, res, _next) => {
 })
 
 // ─── Start ───────────────────────────────────────────────────────────────────
+try {
+  await mongoose.connect(process.env.MONGODB_URI)
+  console.log(`✅ MongoDB đã kết nối: ${mongoose.connection.name}`)
+} catch (err) {
+  console.error('❌ Không kết nối được MongoDB:', err.message)
+  process.exit(1)
+}
 app.listen(PORT, () => {
   console.log(`\n✅ Server đang chạy tại http://localhost:${PORT}`)
   console.log(`   Health check: http://localhost:${PORT}/api/health`)

@@ -11,8 +11,7 @@ export function LoadingProvider({ children }) {
   const [message, setMessage] = useState(null) // null = không loading
   const timerRef = useRef(null)
 
-  // Hiện loading, chờ `delay` ms, chuyển trang rồi tắt loading.
-  // MVP chưa có API nên delay chỉ để tạo cảm giác mượt.
+  // Hiện loading, chờ `delay` ms rồi chuyển trang (dùng khi KHÔNG có API).
   const navigateWithLoading = useCallback(
     (to, { message = 'Đang tải...', delay = 1500 } = {}) => {
       clearTimeout(timerRef.current)
@@ -25,11 +24,18 @@ export function LoadingProvider({ children }) {
     [navigate]
   )
 
-  // Dọn timer khi provider bị gỡ.
+  // MỚI: bật / tắt loading thủ công, dùng khi chờ API.
+  const showLoading = useCallback((msg = 'Đang tải...') => {
+    clearTimeout(timerRef.current)
+    setMessage(msg)
+  }, [])
+
+  const hideLoading = useCallback(() => setMessage(null), [])
+
   useEffect(() => () => clearTimeout(timerRef.current), [])
 
   return (
-    <LoadingContext.Provider value={{ navigateWithLoading }}>
+    <LoadingContext.Provider value={{ navigateWithLoading, showLoading, hideLoading }}>
       {children}
       <AnimatePresence>{message && <LoadingScreen message={message} />}</AnimatePresence>
     </LoadingContext.Provider>

@@ -1,15 +1,42 @@
 import React from 'react'
-import { Link } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
 import AuthLayout from '../../layouts/AuthLayout.jsx'
 import Button from '../../components/Button.jsx'
 import { useLoading } from '../../context/LoadingContext.jsx'
+import { register } from '../../services/authService.js'
+import { notifyError, notifySuccess } from '../../utils/notify.jsx'
 import FormField from './components/FormField.jsx'
 
 export default function RegisterPage() {
-  const { navigateWithLoading } = useLoading()
-  const handleSubmit = (e) => {
+  const navigate = useNavigate()
+  const { showLoading, hideLoading } = useLoading()
+
+  const handleSubmit = async (e) => {
     e.preventDefault()
-    navigateWithLoading('/login', { message: 'Đang tạo tài khoản...', delay: 1000 })
+
+    // Đọc giá trị từ các ô input theo thuộc tính name
+    const form = new FormData(e.currentTarget)
+    const name = form.get('fullName')
+    const email = form.get('email')
+    const password = form.get('password')
+    const confirmPassword = form.get('confirmPassword')
+
+    // BE không kiểm tra confirmPassword nên FE tự kiểm tra
+    if (password !== confirmPassword) {
+      notifyError('Mật khẩu nhập lại không khớp.')
+      return
+    }
+
+    showLoading('Đang tạo tài khoản...')
+    try {
+      await register({ name, email, password }) // FE đặt tên fullName, BE cần name
+      hideLoading()
+      notifySuccess('Đăng ký thành công! Vui lòng đăng nhập.')
+      navigate('/login')
+    } catch (err) {
+      hideLoading()
+      notifyError(err.details?.length ? err.details : err.message)
+    }
   }
 
   return (
