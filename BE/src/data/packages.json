@@ -1,0 +1,107 @@
+{
+  "gym": {
+    "name": "FitAI Gym",
+    "hotline": "HOTLINE_PLACEHOLDER",
+    "email": "EMAIL_PLACEHOLDER",
+    "website": "WEBSITE_PLACEHOLDER",
+    "address": "ADDRESS_PLACEHOLDER",
+    "openingHours": {
+      "weekdays": "WEEKDAY_HOURS_PLACEHOLDER (e.g. 5:30 – 22:00)",
+      "weekend": "WEEKEND_HOURS_PLACEHOLDER (e.g. 6:00 – 21:00)"
+    }
+  },
+  "packages": [
+    {
+      "id": "monthly",
+      "name": "Gói Tháng",
+      "price": "350.000đ/tháng",
+      "billingCycle": "monthly",
+      "features": [
+        "Tập tự do toàn bộ thiết bị",
+        "Tham gia lớp nhóm (Yoga, Zumba, …)",
+        "Tủ đồ & phòng tắm tiêu chuẩn",
+        "AI Workout gợi ý bài tập cơ bản"
+      ],
+      "notIncluded": [
+        "AI Coach cá nhân hóa chuyên sâu",
+        "Nutrition Plan cá nhân"
+      ],
+      "highlight": null
+    },
+    {
+      "id": "yearly",
+      "name": "Gói Năm",
+      "price": "2.990.000đ/năm",
+      "priceNote": "tương đương ~249.000đ/tháng, tiết kiệm 29% so với Gói Tháng",
+      "billingCycle": "yearly",
+      "features": [
+        "Tất cả quyền lợi của Gói Tháng",
+        "Lớp nhóm không giới hạn",
+        "Ưu tiên đặt lịch & khung giờ cao điểm",
+        "AI Workout gợi ý bài tập nâng cao",
+        "Báo cáo tiến độ hàng tháng"
+      ],
+      "notIncluded": [
+        "AI Coach cá nhân hóa chuyên sâu"
+      ],
+      "highlight": "Tiết kiệm nhất"
+    },
+    {
+      "id": "ai-coach",
+      "name": "Gói AI Coach",
+      "subtitle": "Tập tại nhà – không cần thiết bị",
+      "price": "199.000đ/tháng",
+      "billingCycle": "monthly",
+      "features": [
+        "AI Coach hướng dẫn tập realtime",
+        "Kế hoạch tập cá nhân hóa, không cần thiết bị",
+        "Nutrition Plan & theo dõi calo hàng ngày",
+        "Thư viện 500+ bài tập video HD",
+        "Nhắc lịch & động viên từ AI",
+        "Đồng bộ Apple Health & Google Fit"
+      ],
+      "notIncluded": [],
+      "highlight": "Tập tại nhà"
+    }
+  ],
+  "payment": [
+    "Thẻ ngân hàng (Visa, Mastercard, nội địa)",
+    "Ví điện tử (MoMo, ZaloPay)",
+    "Chuyển khoản ngân hàng"
+  ],
+  "promotions": [
+    "PROMOTIONS_PLACEHOLDER – ví dụ: Ưu đãi 20% cho học sinh/sinh viên khi xuất trình thẻ"
+  ],
+  "policies": {
+    "cancelPolicy": "CANCEL_POLICY_PLACEHOLDER",
+    "refundPolicy": "REFUND_POLICY_PLACEHOLDER",
+    "upgradePolicy": "Khách có thể nâng/hạ cấp gói bất cứ lúc nào, hiệu lực từ kỳ thanh toán tiếp theo",
+    "trialPolicy": "TRIAL_POLICY_PLACEHOLDER"
+  },
+  "faq": [
+    {
+      "q": "AI Coach khác gì so với AI Workout ở gói thường?",
+      "a": "AI Workout ở Gói Tháng/Năm gợi ý bài tập chung chung. AI Coach ở gói riêng hiểu mục tiêu và thể trạng cá nhân, xây dựng Workout Plan + Nutrition Plan riêng và tự điều chỉnh theo tiến độ thực tế."
+    },
+    {
+      "q": "Tôi có thể đổi gói tập không?",
+      "a": "Được. Khách có thể nâng cấp hoặc hạ cấp gói bất cứ lúc nào, thay đổi có hiệu lực từ kỳ thanh toán tiếp theo."
+    },
+    {
+      "q": "Người mới bắt đầu có phù hợp không?",
+      "a": "Hoàn toàn phù hợp. Cả Gói Tháng/Năm tại phòng gym và Gói AI Coach tại nhà đều có hướng dẫn từ cơ bản."
+    }
+  ],
+  "_placeholders_to_fill": [
+    "HOTLINE_PLACEHOLDER – số điện thoại hotline thực tế",
+    "EMAIL_PLACEHOLDER – email liên hệ",
+    "WEBSITE_PLACEHOLDER – địa chỉ website",
+    "ADDRESS_PLACEHOLDER – địa chỉ phòng gym (nếu có chi nhánh thì liệt kê từng cái)",
+    "WEEKDAY_HOURS_PLACEHOLDER – giờ mở cửa ngày thường",
+    "WEEKEND_HOURS_PLACEHOLDER – giờ mở cửa cuối tuần",
+    "PROMOTIONS_PLACEHOLDER – ưu đãi hiện tại (nếu không có để mảng rỗng [])",
+    "CANCEL_POLICY_PLACEHOLDER – chính sách hủy gói",
+    "REFUND_POLICY_PLACEHOLDER – chính sách hoàn tiền",
+    "TRIAL_POLICY_PLACEHOLDER – chính sách dùng thử (nếu có)"
+  ]
+}

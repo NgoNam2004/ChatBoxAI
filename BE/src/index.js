@@ -43,7 +43,7 @@ app.use(express.json({ limit: '1mb' }))
 // ─── Routes ──────────────────────────────────────────────────────────────────
 app.use('/api/chat', chatRouter)
 app.use('/api/auth', authRouter)
-// Health check — trả về cả trạng thái GEMINI_API_KEY
+// Health check — trả về cả trạng thái GEMINI_API_KEY và MongoDB
 app.get('/api/health', (_req, res) => {
   const key = process.env.GEMINI_API_KEY ? process.env.GEMINI_API_KEY.trim() : ''
   const configured = !!(key && key !== 'your_gemini_api_key_here')
@@ -51,6 +51,7 @@ app.get('/api/health', (_req, res) => {
     status: 'ok',
     timestamp: new Date().toISOString(),
     geminiConfigured: configured,
+    dbConnected: mongoose.connection.readyState === 1,
   })
 })
 
@@ -66,13 +67,20 @@ app.use((err, _req, res, _next) => {
 })
 
 // ─── Start ───────────────────────────────────────────────────────────────────
-try {
-  await mongoose.connect(process.env.MONGODB_URI)
-  console.log(`✅ MongoDB đã kết nối: ${mongoose.connection.name}`)
-} catch (err) {
-  console.error('❌ Không kết nối được MongoDB:', err.message)
-  process.exit(1)
+if (!process.env.MONGODB_URI) {
+  console.warn('\n⚠️  CẢNH BÁO: MONGODB_URI chưa được thiết lập trong BE/.env')
+  console.warn('   → Vui lòng điền chuỗi kết nối MongoDB của bạn vào BE/.env.')
+} else {
+  try {
+    await mongoose.connect(process.env.MONGODB_URI, { serverSelectionTimeoutMS: 5000 })
+    console.log(`✅ MongoDB đã kết nối: ${mongoose.connection.name || 'OK'}`)
+  } catch (err) {
+    console.error('❌ Không kết nối được MongoDB:', err.message)
+    console.warn('⚠️  Tiếp tục khởi động server để phục vụ Chat API và Health Check.')
+    console.warn('   → Vui lòng kiểm tra lại MongoDB hoặc cập nhật MONGODB_URI trong BE/.env.\n')
+  }
 }
+
 app.listen(PORT, () => {
   console.log(`\n✅ Server đang chạy tại http://localhost:${PORT}`)
   console.log(`   Health check: http://localhost:${PORT}/api/health`)

@@ -6,7 +6,13 @@ import useChatMessages from '../hooks/useChatMessages.js'
 import ChatMessage from './ChatMessage.jsx'
 import ChatInput from './ChatInput.jsx'
 
-const QUICK_SUGGESTIONS = ['Gợi ý bài tập', 'Thực đơn giảm cân', 'Lịch tập tuần này']
+// Nút gợi ý nhanh cho chatbot CSKH tư vấn gói tập
+const QUICK_SUGGESTIONS = [
+  'Các gói tập hiện có',
+  'So sánh gói',
+  'Gói AI Coach là gì?',
+  'Cách đăng ký',
+]
 
 // Large AI Chat popup — the centerpiece of the site.
 // Desktop: 460px × 630px (within the 420–480 × 580–650 target range).
@@ -14,12 +20,12 @@ const QUICK_SUGGESTIONS = ['Gợi ý bài tập', 'Thực đơn giảm cân', 'L
 // Draggable on desktop via framer-motion; always has a clear close button.
 export default function ChatPopup() {
   const { isChatOpen, closeChat } = useChat()
-  const { messages, input, setInput, handleSend, sendMessage, isLoading } = useChatMessages()
+  const { messages, input, setInput, handleSend, sendMessage, retryMessage, isLoading } = useChatMessages()
   const constraintsRef = useRef(null)
   const dragControls = useDragControls()
   const messagesEndRef = useRef(null)
 
-  // Auto-scroll xuống tin nhắn mới nhất
+  // Auto-scroll xuống tin nhắn mới nhất (kể cả khi streaming append text)
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
   }, [messages, isLoading])
@@ -64,17 +70,27 @@ export default function ChatPopup() {
               {/* Messages */}
               <div className="chat-scroll flex-1 overflow-y-auto px-4 sm:px-5 py-4 space-y-3 bg-slate-50 dark:bg-slate-950/40">
                 {messages.map((m, i) => (
-                  <ChatMessage key={i} from={m.from} text={m.text} isError={m.isError} />
+                  <ChatMessage
+                    key={i}
+                    from={m.from}
+                    text={m.text}
+                    isError={m.isError}
+                    isStreaming={m.isStreaming}
+                    retryable={m.retryable}
+                    onRetry={m.failedMessage ? () => retryMessage(m.failedMessage, i) : undefined}
+                  />
                 ))}
 
-                {/* Typing indicator — hiển thị khi AI đang xử lý */}
-                {isLoading && <ChatMessage from="ai" isLoading={true} />}
+                {/* Typing indicator — chỉ hiện khi isLoading và chưa có placeholder nào đang stream */}
+                {isLoading && !messages.some((m) => m.isStreaming) && (
+                  <ChatMessage from="ai" isLoading={true} />
+                )}
 
                 {/* Anchor để auto-scroll */}
                 <div ref={messagesEndRef} />
               </div>
 
-              {/* Quick suggestions — ẩn khi đang loading */}
+              {/* Quick suggestions — ẩn khi đang loading/streaming */}
               {!isLoading && (
                 <div className="flex flex-wrap gap-2 px-4 sm:px-5 pb-3">
                   {QUICK_SUGGESTIONS.map((q) => (
@@ -111,9 +127,9 @@ function ChatPopupHeader({ onClose, onDragStart }) {
         </span>
         <div>
           <p className="text-sm font-semibold flex items-center gap-1">
-            AI Coach <Sparkles size={12} />
+            FitBot <Sparkles size={12} />
           </p>
-          <p className="text-[11px] text-white/80">Phản hồi ngay lập tức</p>
+          <p className="text-[11px] text-white/80">Tư vấn gói tập · FitAI Gym</p>
         </div>
       </div>
       <button onClick={onClose} aria-label="Đóng chat" className="w-8 h-8 grid place-items-center rounded-full hover:bg-white/15 transition-colors">

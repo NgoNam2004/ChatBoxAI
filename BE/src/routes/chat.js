@@ -1,180 +1,196 @@
 import express from 'express'
-import { chat } from '../services/geminiService.js'
+import { chatStream } from '../services/geminiService.js'
 
 const router = express.Router()
 
 /**
- * POST /api/chat
+ * POST /api/chat/stream
  *
- * Body:
+ * Server-Sent Events (SSE) endpoint — stream tokens về FE realtime.
+ *
+ * Request body:
  * {
  *   "message": "string",
- *   "history": [                     // optional — lịch sử hội thoại
- *     { "role": "user",  "parts": [{ "text": "..." }] },
- *     { "role": "model", "parts": [{ "text": "..." }] }
- *   ]
+ *   "history": [{ "role": "user"|"model", "parts": [{ "text": "..." }] }]
  * }
  *
- * Response:
- * { "success": true,  "message": "string" }
- * { "success": false, "message": "string", "code": "string" }  // khi có lỗi
+ * SSE event types:
+ *   data: {"type":"chunk","text":"..."}   — mỗi chunk text
+ *   data: {"type":"done"}                 — kết thúc stream thành công
+ *   data: {"type":"error","code":"...","message":"...","retryable":bool}  — lỗi
  */
-router.post('/', async (req, res) => {
-  // ── Debug log: in ra request body nhận được ──
-  console.log('[/api/chat] Request body nhận được:', {
+router.post('/stream', async (req, res) => {
+  const t0 = Date.now()
+  console.log(`\n[/api/chat/stream] ⬇️  Request nhận lúc ${new Date().toISOString()}`)
+  console.log('[/api/chat/stream] Body:', {
     message: req.body?.message ? `"${req.body.message.slice(0, 80)}..."` : undefined,
     historyLength: Array.isArray(req.body?.history) ? req.body.history.length : 0,
   })
 
   const { message, history } = req.body
 
-  // Validate input
+  // Validate
   if (!message || typeof message !== 'string' || message.trim() === '') {
-    console.warn('[/api/chat] 400 — Tin nhắn trống hoặc không hợp lệ.')
-    return res.status(400).json({
-      success: false,
-      code: 'EMPTY_MESSAGE',
-      message: 'Tin nhắn không được để trống.',
-    })
+    console.warn('[/api/chat/stream] 400 — Tin nhắn trống.')
+    return res.status(400).json({ success: false, code: 'EMPTY_MESSAGE', message: 'Tin nhắn không được để trống.' })
   }
+
+  const validHistory = Array.isArray(history) ? history : []
+
+  // ─── SSE setup ──────────────────────────────────────────────────────────────
+  res.setHeader('Content-Type', 'text/event-stream; charset=utf-8')
+  res.setHeader('Cache-Control', 'no-cache, no-transform')
+  res.setHeader('Connection', 'keep-alive')
+  res.setHeader('X-Accel-Buffering', 'no') // tắt buffering trên Nginx/proxy
+  res.flushHeaders()
+
+  // Helper gửi SSE event
+  const send = (data) => res.write(`data: ${JSON.stringify(data)}\n\n`)
 
   try {
-    // Validate history format nếu được truyền lên
-    const validHistory = Array.isArray(history) ? history : []
+    const tGemini = Date.now()
+    console.log(`[/api/chat/stream] ⏱  Gọi Gemini sau ${tGemini - t0}ms kể từ khi nhận request`)
 
-    const aiReply = await chat(message.trim(), validHistory)
+    let firstChunk = true
+    let totalChars = 0
 
-    return res.json({
-      success: true,
-      message: aiReply,
-    })
-  } catch (err) {
-    const rawMessage = err.message || 'Unknown error'
-    // Mask bất kỳ giá trị key nào trong log — TUYỆT ĐỐI không log API key
-    const sanitizedMessage = rawMessage.replace(/AIza[A-Za-z0-9_-]{35}/g, '***API_KEY_REDACTED***')
+    const stream = chatStream(message.trim(), validHistory)
 
-    // ── Log chi tiết lỗi gốc để debug — KHÔNG che mất stack trace ──
-    console.error('\n[/api/chat] ❌ Error xảy ra khi xử lý request:')
-    console.error('  err.name          :', err.name)
-    console.error('  err.message       :', sanitizedMessage)
-    console.error('  err.isConfigError :', err.isConfigError)
-    console.error('  err.httpStatus    :', err.httpStatus)
-    console.error('  err.status        :', err.status)
-    if (err.errorDetails) {
-      console.error('  err.errorDetails  :', JSON.stringify(err.errorDetails))
-    }
-    if (err.stack) {
-      console.error('  stack trace:\n', err.stack.replace(/AIza[A-Za-z0-9_-]{35}/g, '***REDACTED***'))
-    }
-    console.error('')
-
-    // ── Phân loại lỗi chi tiết theo yêu cầu ──
-    if (err.isConfigError) {
-      return res.status(500).json({
-        success: false,
-        code: 'CONFIG_ERROR',
-        message: err.message || 'Cấu hình AI chưa hoàn chỉnh (thiếu GEMINI_API_KEY).',
-      })
-    }
-
-    let geminiStatus = err.httpStatus || err.status
-    let parsedCode = null
-    let parsedMessage = null
-
-    if (typeof rawMessage === 'string' && rawMessage.startsWith('{')) {
-      try {
-        const parsed = JSON.parse(rawMessage)
-        if (parsed.error) {
-          if (parsed.error.code) geminiStatus = parsed.error.code
-          if (parsed.error.status) parsedCode = parsed.error.status
-          if (parsed.error.message) parsedMessage = parsed.error.message
-        }
-      } catch (e) {
-        // Not valid JSON
+    for await (const chunk of stream) {
+      if (firstChunk) {
+        const tFirst = Date.now()
+        console.log(`[/api/chat/stream] ⚡ Token đầu tiên sau ${tFirst - t0}ms (TTFT)`)
+        firstChunk = false
       }
+      totalChars += chunk.length
+      send({ type: 'chunk', text: chunk })
     }
 
-    const detailMessage = parsedMessage || sanitizedMessage
+    const tDone = Date.now()
+    console.log(`[/api/chat/stream] ✅ Stream hoàn thành sau ${tDone - t0}ms | ${totalChars} ký tự`)
 
-    // 1. API Key / Auth Error (401, 403, PERMISSION_DENIED)
-    if (
-      geminiStatus === 401 ||
-      geminiStatus === 403 ||
-      parsedCode === 'PERMISSION_DENIED' ||
-      detailMessage.toLowerCase().includes('api key')
-    ) {
-      return res.status(geminiStatus || 401).json({
-        success: false,
-        code: 'INVALID_API_KEY',
-        message: `Lỗi API Key Gemini: ${detailMessage}`,
-      })
-    }
+    send({ type: 'done' })
+    res.end()
 
-    // 2. Model không tồn tại / shutdown (404, NOT_FOUND)
-    if (
-      geminiStatus === 404 ||
-      parsedCode === 'NOT_FOUND' ||
-      detailMessage.toLowerCase().includes('not found')
-    ) {
-      return res.status(404).json({
-        success: false,
-        code: 'MODEL_NOT_FOUND',
-        message: `Model Gemini không tồn tại hoặc đã bị ngừng hỗ trợ: ${detailMessage}`,
-      })
-    }
+  } catch (err) {
+    const tErr = Date.now()
+    const rawMessage = err.message || 'Unknown error'
+    const sanitized  = rawMessage.replace(/AIza[A-Za-z0-9_-]{35}/g, '***REDACTED***')
 
-    // 3. Quota / Rate Limit (429, RESOURCE_EXHAUSTED)
-    if (
-      geminiStatus === 429 ||
-      parsedCode === 'RESOURCE_EXHAUSTED' ||
-      detailMessage.toLowerCase().includes('quota') ||
-      detailMessage.toLowerCase().includes('rate limit')
-    ) {
-      return res.status(429).json({
-        success: false,
-        code: 'RATE_LIMIT_EXCEEDED',
-        message: `Vượt quá giới hạn lượt gọi Gemini API (Quota/Rate limit): ${detailMessage}`,
-      })
-    }
+    console.error(`\n[/api/chat/stream] ❌ Lỗi sau ${tErr - t0}ms:`)
+    console.error('  err.name         :', err.name)
+    console.error('  err.message      :', sanitized)
+    console.error('  err.isConfigError:', err.isConfigError)
+    console.error('  err.status       :', err.status)
+    if (err.stack) console.error('  stack:\n', err.stack.replace(/AIza[A-Za-z0-9_-]{35}/g, '***REDACTED***'))
 
-    // 4. Timeout (ETIMEDOUT, timeout)
-    if (
-      err.code === 'ETIMEDOUT' ||
-      err.code === 'ESOCKETTIMEDOUT' ||
-      detailMessage.toLowerCase().includes('timeout')
-    ) {
-      return res.status(504).json({
-        success: false,
-        code: 'TIMEOUT',
-        message: 'Kết nối tới Gemini API bị quá thời gian (Timeout).',
-      })
-    }
-
-    // 5. Service Unavailable (503, UNAVAILABLE)
-    if (geminiStatus === 503 || parsedCode === 'UNAVAILABLE') {
-      return res.status(503).json({
-        success: false,
-        code: 'SERVICE_UNAVAILABLE',
-        message: `Dịch vụ Gemini đang quá tải (503): ${detailMessage}`,
-      })
-    }
-
-    // 6. Bad Request (400)
-    if (geminiStatus === 400) {
-      return res.status(400).json({
-        success: false,
-        code: 'GEMINI_BAD_REQUEST',
-        message: `Yêu cầu gửi tới Gemini không hợp lệ (400): ${detailMessage}`,
-      })
-    }
-
-    // 7. General Gemini API Error
-    return res.status(geminiStatus && geminiStatus >= 400 && geminiStatus < 600 ? geminiStatus : 502).json({
-      success: false,
-      code: 'GEMINI_API_ERROR',
-      message: `Gemini API gặp lỗi (${geminiStatus || 502}): ${detailMessage}`,
-    })
+    send(buildErrorPayload(err))
+    res.end()
   }
 })
+
+/**
+ * POST /api/chat  (non-streaming, giữ để backward compat)
+ *
+ * Collect toàn bộ chunks rồi trả về một JSON.
+ * FE cũ vẫn hoạt động; nên dần migrate sang /stream.
+ */
+router.post('/', async (req, res) => {
+  const t0 = Date.now()
+  console.log(`\n[/api/chat] ⬇️  Request nhận lúc ${new Date().toISOString()}`)
+  console.log('[/api/chat] Body:', {
+    message: req.body?.message ? `"${req.body.message.slice(0, 80)}..."` : undefined,
+    historyLength: Array.isArray(req.body?.history) ? req.body.history.length : 0,
+  })
+
+  const { message, history } = req.body
+
+  if (!message || typeof message !== 'string' || message.trim() === '') {
+    console.warn('[/api/chat] 400 — Tin nhắn trống.')
+    return res.status(400).json({ success: false, code: 'EMPTY_MESSAGE', message: 'Tin nhắn không được để trống.' })
+  }
+
+  const validHistory = Array.isArray(history) ? history : []
+
+  try {
+    const tGemini = Date.now()
+    console.log(`[/api/chat] ⏱  Gọi Gemini sau ${tGemini - t0}ms`)
+
+    let fullText = ''
+    let firstChunk = true
+
+    for await (const chunk of chatStream(message.trim(), validHistory)) {
+      if (firstChunk) {
+        console.log(`[/api/chat] ⚡ Token đầu tiên sau ${Date.now() - t0}ms (TTFT)`)
+        firstChunk = false
+      }
+      fullText += chunk
+    }
+
+    const tDone = Date.now()
+    console.log(`[/api/chat] ✅ Done sau ${tDone - t0}ms | ${fullText.length} ký tự`)
+
+    return res.json({ success: true, message: fullText })
+
+  } catch (err) {
+    const rawMessage = err.message || 'Unknown error'
+    const sanitized  = rawMessage.replace(/AIza[A-Za-z0-9_-]{35}/g, '***REDACTED***')
+
+    console.error('\n[/api/chat] ❌ Error:')
+    console.error('  err.name         :', err.name)
+    console.error('  err.message      :', sanitized)
+    console.error('  err.isConfigError:', err.isConfigError)
+    console.error('  err.status       :', err.status)
+    if (err.stack) console.error('  stack:\n', err.stack.replace(/AIza[A-Za-z0-9_-]{35}/g, '***REDACTED***'))
+
+    const payload = buildErrorPayload(err)
+    const httpStatus = getHttpStatus(err)
+    return res.status(httpStatus).json({ success: false, ...payload })
+  }
+})
+
+// ─── Helpers ─────────────────────────────────────────────────────────────────
+
+function getHttpStatus(err) {
+  const s = err.httpStatus || err.status
+  if (err.isConfigError)                         return 500
+  if (s === 401 || s === 403)                    return s
+  if (s === 503)                                 return 503
+  if (s === 429)                                 return 429
+  if (err.code === 'ETIMEDOUT')                  return 504
+  if (s === 404)                                 return 404
+  if (s === 400)                                 return 400
+  return 502
+}
+
+function buildErrorPayload(err) {
+  const rawMessage = err.message || 'Unknown error'
+  const sanitized  = rawMessage.replace(/AIza[A-Za-z0-9_-]{35}/g, '***REDACTED***')
+  const s = err.httpStatus || err.status
+  const detail = sanitized.toLowerCase()
+
+  if (err.isConfigError) {
+    return { type: 'error', code: 'CONFIG_ERROR', retryable: false, message: 'Hệ thống AI chưa được cấu hình API key. Vui lòng liên hệ quản trị viên.' }
+  }
+  if (s === 401 || s === 403 || detail.includes('api key') || detail.includes('permission denied')) {
+    return { type: 'error', code: 'INVALID_API_KEY', retryable: false, message: 'Khóa API không hợp lệ. Vui lòng liên hệ quản trị viên.' }
+  }
+  if (s === 503 || detail.includes('overloaded') || detail.includes('unavailable')) {
+    return { type: 'error', code: 'SERVICE_UNAVAILABLE', retryable: true, message: 'Dịch vụ AI đang bận, bạn vui lòng thử lại sau vài giây nhé!' }
+  }
+  if (s === 429 || detail.includes('quota') || detail.includes('rate limit')) {
+    return { type: 'error', code: 'RATE_LIMIT_EXCEEDED', retryable: true, message: 'Hệ thống AI tạm thời quá tải, vui lòng thử lại sau ít giây!' }
+  }
+  if (err.code === 'ETIMEDOUT' || detail.includes('timeout')) {
+    return { type: 'error', code: 'TIMEOUT', retryable: true, message: 'Kết nối AI bị gián đoạn. Vui lòng kiểm tra mạng và thử lại!' }
+  }
+  if (s === 404) {
+    return { type: 'error', code: 'MODEL_NOT_FOUND', retryable: false, message: 'Mô hình AI không khả dụng. Vui lòng liên hệ quản trị viên.' }
+  }
+  if (s === 400) {
+    return { type: 'error', code: 'BAD_REQUEST', retryable: false, message: 'Nội dung tin nhắn không thể xử lý. Vui lòng diễn đạt lại nhé!' }
+  }
+  return { type: 'error', code: 'SYSTEM_ERROR', retryable: true, message: 'Hệ thống gặp sự cố tạm thời. Vui lòng thử lại sau vài giây!' }
+}
 
 export default router

@@ -2,6 +2,7 @@ import express from 'express'
 import bcrypt from 'bcryptjs'
 import jwt from 'jsonwebtoken' // MỚI
 import Joi from 'joi'
+import mongoose from 'mongoose'
 import User from '../models/User.js'
 
 // MỚI: thiếu JWT_SECRET thì dừng ngay khi khởi động, không để server chạy thiếu an toàn
@@ -11,6 +12,18 @@ if (!process.env.JWT_SECRET) {
 
 const router = express.Router()
 const BCRYPT_ROUNDS = Number(process.env.BCRYPT_ROUNDS) || 12
+
+// Middleware: Kiểm tra kết nối MongoDB trước khi xử lý auth
+router.use((_req, res, next) => {
+  if (mongoose.connection.readyState !== 1) {
+    return res.status(503).json({
+      success: false,
+      code: 'DATABASE_UNAVAILABLE',
+      message: 'Cơ sở dữ liệu MongoDB chưa kết nối. Vui lòng kiểm tra lại biến MONGODB_URI trong file BE/.env.',
+    })
+  }
+  next()
+})
 
 // MỚI: hash giả, dùng khi email không tồn tại để thời gian phản hồi luôn như nhau
 const DUMMY_HASH = bcrypt.hashSync('dummy-password-123', BCRYPT_ROUNDS)

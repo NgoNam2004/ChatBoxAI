@@ -30,3 +30,9 @@ body {
   background-color: #38BDF8;
   border-radius: 999px;
 }
+
+/* Streaming cursor blink animation */
+@keyframes blink-cursor {
+  0%, 100% { opacity: 1; }
+  50%       { opacity: 0; }
+}
