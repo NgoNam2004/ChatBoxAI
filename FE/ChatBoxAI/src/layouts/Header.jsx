@@ -4,7 +4,7 @@ import React, { useState } from 'react'
 import { Menu, X, Dumbbell, ChevronDown, User, LogOut } from 'lucide-react'
 import { Link, useNavigate } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext.jsx'
-import { notifySuccess } from '../utils/notify.jsx'
+import toast from 'react-hot-toast'
 
 const NAV_LINKS = [
   { label: 'Trang chủ', href: '#hero' },
@@ -15,17 +15,16 @@ const NAV_LINKS = [
 
 export default function Header() {
   const [open, setOpen] = useState(false)
-  const { user, signOut } = useAuth()
+  const { user, logout } = useAuth()
   const navigate = useNavigate()
 
   // Chữ cái đầu của tên, hiện trong vòng tròn
-  const initial = user?.name?.trim().charAt(0).toUpperCase() || '?'
+  const initial = user?.full_name?.trim().charAt(0).toUpperCase() || '?'
 
   const handleLogout = () => {
-    signOut()
     setOpen(false)
-    notifySuccess('Đã đăng xuất.')
-    navigate('/')
+    toast.success('Đã đăng xuất.')
+    logout() // logout gọi navigate('/login') bên trong
   }
 
   return (
@@ -66,7 +65,7 @@ export default function Header() {
                 <span className="grid place-items-center w-8 h-8 rounded-full bg-gradient-to-br from-primary to-accent text-white text-sm font-bold">
                   {initial}
                 </span>
-                <span className="max-w-[140px] truncate">{user.name}</span>
+                <span className="max-w-[140px] truncate">{user.full_name}</span>
                 <ChevronDown
                   size={16}
                   className="transition-transform duration-150 group-hover:rotate-180 group-focus-within:rotate-180"
@@ -139,7 +138,7 @@ export default function Header() {
                 <span className="grid place-items-center w-6 h-6 rounded-full bg-gradient-to-br from-primary to-accent text-white text-xs font-bold">
                   {initial}
                 </span>
-                <span className="max-w-[110px] truncate">{user.name}</span>
+                <span className="max-w-[110px] truncate">{user.full_name}</span>
               </Link>
               <button
                 type="button"

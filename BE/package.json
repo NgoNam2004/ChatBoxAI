@@ -1,12 +1,13 @@
 {
-  "name": "fitai-gym-backend",
+  "name": "chatboxai-backend",
   "version": "1.0.0",
-  "description": "FitAI Gym AI Coach backend — Express + Google Gemini",
+  "description": "ChatBoxAI backend — Express + Google Gemini + MySQL",
   "type": "module",
   "main": "src/index.js",
   "scripts": {
     "start": "node src/index.js",
-    "dev": "node --watch src/index.js"
+    "dev": "node --watch src/index.js",
+    "db:init": "node src/db/init.js"
   },
   "keywords": [],
   "author": "",
@@ -18,8 +19,10 @@
     "cors": "^2.8.6",
     "dotenv": "^18.0.5",
     "express": "^5.2.1",
+    "express-rate-limit": "^7.5.0",
+    "helmet": "^8.0.0",
     "joi": "^18.2.9",
     "jsonwebtoken": "^9.0.3",
-    "mongoose": "^9.11.1"
+    "mysql2": "^3.11.5"
   }
 }
